@@ -15,4 +15,5 @@ cask 'claude'
 cask 'claude-code'
 cask 'chatgpt'
 cask 'setapp'
+cask 'logi-options+'
 
