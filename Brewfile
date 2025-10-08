@@ -11,5 +11,9 @@ cask 'raycast'
 cask 'whatsapp'
 
 cask 'cursor'
-
+cask 'spotify'
+cask 'claude'
+cask 'claude-code'
+cask 'chatgpt'
+cask 'setapp'
 
