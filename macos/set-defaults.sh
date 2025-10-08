@@ -48,71 +48,105 @@ defaults write NSGlobalDomain WebKitDeveloperExtras -bool true
 
 
 
-# Set mouse tracking speed (range ~0.0 to 3.0)
+
+echo "⚙️  Applying macOS preferences..."
+
+###############################################################################
+# 🖱️ Mouse & Trackpad
+###############################################################################
+echo "→ Configuring mouse & trackpad speed..."
 defaults write -g com.apple.mouse.scaling -float 3.0
-
-
 defaults write -g com.apple.mouse.acceleration -float 1.5
-
-# Set trackpad tracking speed (range ~0 to 3)
 defaults write -g com.apple.trackpad.scaling -float 2.5
+killall cfprefsd 2>/dev/null || true
 
-echo "Customizing Dock apps + layout..."
+###############################################################################
+# 🧱 Dock setup
+###############################################################################
+echo "→ Configuring Dock layout..."
 
-# Start from a clean Dock (keeps Finder & Trash automatically)
+# Start from a clean Dock (Finder + Trash remain)
 defaults write com.apple.dock persistent-apps -array
 defaults write com.apple.dock persistent-others -array
 
-# Helper to add apps by path
+# Helper to resolve real app paths
+resolve_app() {
+  local bundle_id="$1"; shift
+  local found
+  found="$(mdfind "kMDItemCFBundleIdentifier == '$bundle_id'" | head -n1)"
+  if [[ -n "$found" && -e "$found" ]]; then
+    printf "%s" "$found"
+    return 0
+  fi
+  # fallbacks
+  for guess in "$@"; do
+    if [[ -e "$guess" ]]; then
+      printf "%s" "$guess"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Helper to add apps to Dock safely
 dock_add() {
-  defaults write com.apple.dock persistent-apps -array-add \
-  "<dict>
-      <key>tile-data</key>
+  local app_path="$1"
+  if [[ ! -e "$app_path" ]]; then
+    echo "⚠️  Dock skip: $app_path not found"
+    return
+  fi
+  local url="file://$app_path"
+  defaults write com.apple.dock persistent-apps -array-add "
+  <dict>
+    <key>tile-data</key>
+    <dict>
+      <key>file-data</key>
       <dict>
-          <key>file-data</key>
-          <dict>
-              <key>_CFURLString</key>
-              <string>$1</string>
-              <key>_CFURLStringType</key>
-              <integer>0</integer>
-          </dict>
+        <key>_CFURLString</key><string>${url}</string>
+        <key>_CFURLStringType</key><integer>15</integer>
       </dict>
+    </dict>
   </dict>"
 }
 
-# Personal apps
-dock_add "/System/Applications/Safari.app"
-dock_add "/System/Applications/Messages.app"
+# Resolve app paths
+SAFARI_PATH="$(resolve_app com.apple.Safari /Applications/Safari.app)"
+MESSAGES_PATH="$(resolve_app com.apple.iChat /System/Applications/Messages.app)"
+SLACK_PATH="$(resolve_app com.tinyspeck.slackmacgap /Applications/Slack.app)"
+ZOOM_PATH="$(resolve_app us.zoom.xos /Applications/zoom.us.app)"
+OUTLOOK_PATH="$(resolve_app com.microsoft.Outlook '/Applications/Microsoft Outlook.app')"
+CISCO_PATH="$(resolve_app com.cisco.secureclient.gui \
+  '/Applications/Cisco Secure Client.app' \
+  '/Applications/Cisco/Cisco Secure Client.app' \
+  '/Applications/Cisco/Cisco AnyConnect Secure Mobility Client.app')"
+SETTINGS_PATH="/System/Applications/System Settings.app"
 
-# Work apps
-dock_add "/Applications/Slack.app"
-dock_add "/Applications/zoom.us.app"
-dock_add "/Applications/Microsoft Outlook.app"
-dock_add "/Applications/Cisco Secure Client.app"
+# Add apps to Dock (Finder/Trash always there)
+[[ -n "$SAFARI_PATH" ]]   && dock_add "$SAFARI_PATH"   || echo "⚠️ Safari not found"
+[[ -n "$MESSAGES_PATH" ]] && dock_add "$MESSAGES_PATH" || echo "⚠️ Messages not found"
+[[ -n "$SLACK_PATH" ]]    && dock_add "$SLACK_PATH"    || echo "⚠️ Slack not found"
+[[ -n "$ZOOM_PATH" ]]     && dock_add "$ZOOM_PATH"     || echo "⚠️ Zoom not found"
+[[ -n "$OUTLOOK_PATH" ]]  && dock_add "$OUTLOOK_PATH"  || echo "⚠️ Outlook not found"
+[[ -n "$CISCO_PATH" ]]    && dock_add "$CISCO_PATH"    || echo "⚠️ Cisco not found"
+[[ -e "$SETTINGS_PATH" ]] && dock_add "$SETTINGS_PATH"
 
-# System Settings if you want it handy
-dock_add "/System/Applications/System Settings.app"
+# Add Downloads stack on right side
+defaults write com.apple.dock persistent-others -array-add "
+<dict>
+  <key>tile-data</key>
+  <dict>
+    <key>file-data</key>
+    <dict>
+      <key>_CFURLString</key><string>file://${HOME}/Downloads</string>
+      <key>_CFURLStringType</key><integer>15</integer>
+    </dict>
+    <key>displayas</key><integer>0</integer> <!-- stack -->
+    <key>showas</key><integer>1</integer>   <!-- grid -->
+  </dict>
+  <key>tile-type</key><string>directory-tile</string>
+</dict>"
 
-# Downloads stack on the right side
-defaults write com.apple.dock persistent-others -array-add \
-  "<dict>
-      <key>tile-data</key>
-      <dict>
-          <key>file-data</key>
-          <dict>
-              <key>_CFURLString</key>
-              <string>file://${HOME}/Downloads</string>
-              <key>_CFURLStringType</key>
-              <integer>15</integer>
-          </dict>
-          <key>displayas</key>  <integer>0</integer>   <!-- 0 = stack, 1 = folder -->
-          <key>showas</key>     <integer>1</integer>   <!-- 1 = grid -->
-      </dict>
-      <key>tile-type</key>
-      <string>directory-tile</string>
-  </dict>"
-
-# Dock layout & behavior
+# Dock appearance
 defaults write com.apple.dock orientation -string "right"
 defaults write com.apple.dock tilesize -int 36
 defaults write com.apple.dock magnification -bool true
@@ -120,12 +154,33 @@ defaults write com.apple.dock largesize -int 64
 defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock autohide-delay -float 0
 
-# Apply
 killall Dock
 
-# Make key apps start at login (optional)
-osascript -e 'tell application "System Events" to make login item at end with properties {path:"/System/Applications/Messages.app", hidden:false}'
-osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/Slack.app", hidden:false}'
-osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/zoom.us.app", hidden:false}'
-osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/Microsoft Outlook.app", hidden:false}'
-osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/Cisco Secure Client.app", hidden:true}'
+###############################################################################
+# 🔄 Login items
+###############################################################################
+echo "→ Adding login items..."
+
+add_login_item() {
+  local name="$1"
+  local app_path="$2"
+  if [[ ! -e "$app_path" ]]; then
+    echo "⚠️  Skipping login item (not found): $name"
+    return
+  fi
+  osascript <<EOF
+tell application "System Events"
+  if exists login item "$name" then delete login item "$name"
+  make login item at end with properties {name:"$name", path:"$app_path", hidden:false}
+end tell
+EOF
+}
+
+# Messages, Slack, Zoom, Outlook, Cisco
+add_login_item "Messages" "$MESSAGES_PATH"
+add_login_item "Slack" "$SLACK_PATH"
+add_login_item "Zoom" "$ZOOM_PATH"
+add_login_item "Microsoft Outlook" "$OUTLOOK_PATH"
+add_login_item "Cisco Secure Client" "$CISCO_PATH"
+
+echo "✅ macOS configuration applied!"
