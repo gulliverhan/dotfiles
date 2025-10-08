@@ -30,10 +30,10 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool true
 defaults write com.apple.dock wvous-bl-corner -int 5
 defaults write com.apple.dock wvous-bl-modifier -int 0
 
-# Hide Safari's bookmark bar.
+# Hide Safari Favorites bar
 defaults write com.apple.Safari ShowFavoritesBar -bool false
 
-# Show overlay status URL
+# Show link status overlay
 defaults write com.apple.Safari ShowOverlayStatusBar -bool true
 
 # Enable Develop menu / Web Inspector
@@ -41,6 +41,10 @@ defaults write com.apple.Safari IncludeDevelopMenu -bool true
 defaults write com.apple.Safari WebKitDeveloperExtrasEnabledPreferenceKey -bool true
 defaults write com.apple.Safari "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" -bool true
 defaults write NSGlobalDomain WebKitDeveloperExtras -bool true
+
+# Make sure Safari is closed when applying:
+osascript -e 'try' -e 'tell application "Safari" to quit' -e 'end try'
+killall cfprefsd 2>/dev/null || true
 
 
 
@@ -119,15 +123,16 @@ CISCO_PATH="$(resolve_app com.cisco.secureclient.gui \
 SETTINGS_PATH="/System/Applications/System Settings.app"
 LAUNCHPAD_PATH="/System/Applications/Launchpad.app"
 
+
 # Add apps to Dock (Finder/Trash always there)
--e "$LAUNCHPAD_PATH" ]] && dock_add "$LAUNCHPAD_PATH" || echo "⚠️ Launchpad not found"
-[[ -n "$SAFARI_PATH" ]]   && dock_add "$SAFARI_PATH"   || echo "⚠️ Safari not found"
-[[ -n "$MESSAGES_PATH" ]] && dock_add "$MESSAGES_PATH" || echo "⚠️ Messages not found"
-[[ -n "$SLACK_PATH" ]]    && dock_add "$SLACK_PATH"    || echo "⚠️ Slack not found"
-[[ -n "$ZOOM_PATH" ]]     && dock_add "$ZOOM_PATH"     || echo "⚠️ Zoom not found"
-[[ -n "$OUTLOOK_PATH" ]]  && dock_add "$OUTLOOK_PATH"  || echo "⚠️ Outlook not found"
-[[ -n "$CISCO_PATH" ]]    && dock_add "$CISCO_PATH"    || echo "⚠️ Cisco not found"
-[[ -e "$SETTINGS_PATH" ]] && dock_add "$SETTINGS_PATH"
+[ -e "$LAUNCHPAD_PATH" ]  && dock_add "$LAUNCHPAD_PATH"  || echo "⚠️ Launchpad not found"
+[ -n "$SAFARI_PATH" ]     && dock_add "$SAFARI_PATH"     || echo "⚠️ Safari not found"
+[ -n "$MESSAGES_PATH" ]   && dock_add "$MESSAGES_PATH"   || echo "⚠️ Messages not found"
+[ -n "$SLACK_PATH" ]      && dock_add "$SLACK_PATH"      || echo "⚠️ Slack not found"
+[ -n "$ZOOM_PATH" ]       && dock_add "$ZOOM_PATH"       || echo "⚠️ Zoom not found"
+[ -n "$OUTLOOK_PATH" ]    && dock_add "$OUTLOOK_PATH"    || echo "⚠️ Outlook not found"
+[ -n "$CISCO_PATH" ]      && dock_add "$CISCO_PATH"      || echo "⚠️ Cisco not found"
+[ -e "$SETTINGS_PATH" ]   && dock_add "$SETTINGS_PATH"
 
 # Add Downloads stack on right side
 defaults write com.apple.dock persistent-others -array-add "
