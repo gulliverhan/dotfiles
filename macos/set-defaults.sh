@@ -31,18 +31,15 @@ defaults write com.apple.dock wvous-bl-corner -int 5
 defaults write com.apple.dock wvous-bl-modifier -int 0
 
 # Hide Safari's bookmark bar.
-defaults write com.apple.Safari.plist ShowFavoritesBar -bool false
+defaults write com.apple.Safari ShowFavoritesBar -bool false
 
-# Always show Safari's "URL display" tab in the lower left on mouseover. Strangely
-# like, everyone and their LLMs on the internet thinks this is ShowStatusBar, but
-# it's not.
+# Show overlay status URL
 defaults write com.apple.Safari ShowOverlayStatusBar -bool true
 
-# Set up Safari for development.
-defaults write com.apple.Safari.SandboxBroker ShowDevelopMenu -bool true
-defaults write com.apple.Safari.plist IncludeDevelopMenu -bool true
-defaults write com.apple.Safari.plist WebKitDeveloperExtrasEnabledPreferenceKey -bool true
-defaults write com.apple.Safari.plist "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" -bool true
+# Enable Develop menu / Web Inspector
+defaults write com.apple.Safari IncludeDevelopMenu -bool true
+defaults write com.apple.Safari WebKitDeveloperExtrasEnabledPreferenceKey -bool true
+defaults write com.apple.Safari "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" -bool true
 defaults write NSGlobalDomain WebKitDeveloperExtras -bool true
 
 
@@ -120,8 +117,10 @@ CISCO_PATH="$(resolve_app com.cisco.secureclient.gui \
   '/Applications/Cisco/Cisco Secure Client.app' \
   '/Applications/Cisco/Cisco AnyConnect Secure Mobility Client.app')"
 SETTINGS_PATH="/System/Applications/System Settings.app"
+LAUNCHPAD_PATH="/System/Applications/Launchpad.app"
 
 # Add apps to Dock (Finder/Trash always there)
+-e "$LAUNCHPAD_PATH" ]] && dock_add "$LAUNCHPAD_PATH" || echo "⚠️ Launchpad not found"
 [[ -n "$SAFARI_PATH" ]]   && dock_add "$SAFARI_PATH"   || echo "⚠️ Safari not found"
 [[ -n "$MESSAGES_PATH" ]] && dock_add "$MESSAGES_PATH" || echo "⚠️ Messages not found"
 [[ -n "$SLACK_PATH" ]]    && dock_add "$SLACK_PATH"    || echo "⚠️ Slack not found"
